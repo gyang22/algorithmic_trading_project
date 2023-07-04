@@ -105,35 +105,37 @@ def add_signal_cols(df):
     return df
 
 
-
+"""
+Takes in a dataframe of data and a ticker for labeling purposes.
+Plots the closing price, bollinger bands and signals, and MACD lines for the data.
+"""
 def plot_signals(df, ticker):
-    # plot price
-    plt.figure(figsize=(15,5))
+    plt.figure()
+
+    plt.subplot(3, 1, 1)
     plt.plot(df['t'], df['c'])
     plt.title('Price chart (Adj Close) ' + str(ticker))
-    plt.show()
 
-    # plot  values and significant levels
-    plt.figure(figsize=(15,5))
+    plt.subplot(3, 1, 2)
     plt.title('Bollinger Bands chart ' + str(ticker))
     plt.plot(df['t'], df['h'], label='High', alpha=0.2)
     plt.plot(df['t'], df['l'], label='Low', alpha=0.2)
     plt.plot(df['t'], df['c'], label='Adj Close', color='blue', alpha=0.3)
-
     plt.scatter(df['t'], df['buy_sig'], label='Buy', marker='^')
     plt.scatter(df['t'], df['sell_sig'], label='Sell', marker='v')
-
     plt.legend()
 
-    plt.show()
-       
-    plt.figure(figsize=(15,5))
+    plt.subplot(3, 1, 3)
     plt.title('MACD chart ' + str(ticker))
     plt.plot(df['t'], df['MACD'].fillna(0))
     plt.plot(df['t'], df['MACDsig'].fillna(0))
     plt.plot(df['t'], df['MACDhist'].fillna(0))
     plt.bar(df['t'], df['MACDhist'].fillna(0), width=0.5, snap=False)
-    
+
+    plt.subplots_adjust(hspace=0.5)
+
+    plt.show()
+
     return None
 
 
