@@ -7,6 +7,8 @@ import time
 import math
 
 
+token = "czZIWDd2a01zSDN6NmZsVXlCS0VpOE1mWHJVMFJWem1QRGtHQW5xMEs0az0"
+
 """
 Converts a date string to a integer unix time.
 """
@@ -20,10 +22,11 @@ Gets data from API ranging from 20 days before that date to the day after that d
 """
 def get_stock_data(symbol, start_date, countback):
     start_date = datestring_to_unix(start_date)
-    base_url = f"https://api.marketdata.app/v1/stocks/candles/D/{symbol}?to={start_date}&countback={countback}"
+    base_url = f"https://api.marketdata.app/v1/stocks/candles/D/{symbol}?to={start_date}&countback={countback}&token={token}"
     response = requests.get(base_url)
     data = response.json()
-    
+    if data['s'] == "error":
+        raise Exception(data['errmsg'])
     return data
 
 
@@ -189,13 +192,16 @@ def add_new_day_row(df, ticker, date):
 Takes in a ticker, a starting amount of money, a start date, and an end date.
 Returns the end amount of money from using the MACD strategy during those dates with that amount of starting money.
 """
-def MACD_historical_backtest(ticker, starting_amount, start_date, countback):
+def MACD_historical_backtest(ticker, starting_amount, start_date, countback, investment_percentage):
+    if investment_percentage <= 0 or investment_percentage > 1:
+        raise Exception(f"Entered investment percentage of {investment_percentage} should be between 0 and 1.")
+
     data = get_stock_data(ticker, start_date, countback)
     df = pd.DataFrame(data)
     df = add_MACD_cols(df, 12, 26, 9)
     df = add_signal_cols(df)
 
-    stock_amount = starting_amount / 2
+    stock_amount = starting_amount * 0.8
     liquid_amount = starting_amount - stock_amount
     previous_close = df['c'][0]
     for index, row in df.iterrows():
@@ -206,20 +212,26 @@ def MACD_historical_backtest(ticker, starting_amount, start_date, countback):
 
         if not math.isnan(row['buy_sig']):
             old_stock_amount = stock_amount
-            stock_amount, liquid_amount = stock_amount + liquid_amount * 0.1, liquid_amount * 0.9
+            stock_amount, liquid_amount = stock_amount + liquid_amount * investment_percentage, liquid_amount * (1 - investment_percentage)
             print(f"Bought {stock_amount - old_stock_amount} of {ticker} on {row['t']} / day {index}")
         elif not math.isnan(row['sell_sig']):
             old_stock_amount = stock_amount
-            stock_amount, liquid_amount = stock_amount * 0.9, liquid_amount + stock_amount * 0.1
+            stock_amount, liquid_amount = stock_amount * (1 - investment_percentage), liquid_amount + stock_amount * investment_percentage
             print(f"Sold {old_stock_amount - stock_amount} of {ticker} on {row['t']} / day {index}")
 
-    return stock_amount, liquid_amount, stock_amount + liquid_amount
+    print(f"Holding {starting_amount} without trades would result in {(df['c'][len(df) - 1] / df['c'][0]) * starting_amount}")
+
+    return stock_amount, liquid_amount, stock_amount + liquid_amount, df
 
 
 
 if __name__ == '__main__':
-    result = MACD_historical_backtest("AAPL", 100000, "2022-06-22", 1000)
+
+    ticker = "TSLA"
+
+    result = MACD_historical_backtest(ticker, 100000, "2022-06-22", 1000, 0.5)
     print(f"Ended with {result[0]} in stocks, {result[1]} in cash, and {result[2]} in total.")
 
+    plot_signals(result[3], ticker)
 
 
