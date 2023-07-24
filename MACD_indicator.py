@@ -231,7 +231,7 @@ if __name__ == '__main__':
 
     ticker = "TSLA"
 
-    result = MACD_historical_backtest(ticker, 100000, "2022-06-22", 1000, 0.5)
+    result = MACD_historical_backtest(ticker, 100000, "2022-06-22", 200, 0.5)
     print(f"Ended with {result[0]} in stocks, {result[1]} in cash, and {result[2]} in total.")
 
     plot_signals(result[3], ticker)
